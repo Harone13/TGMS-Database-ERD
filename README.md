@@ -1,4 +1,4 @@
-# Those are my own Ideas befor I learn any think in management or professional experience
+# Those are my own Ideas befor I learn any management or took any professional experience
 ###
 ## There is TGMS ERD for goals & Tasks Management system using pomodoro sessions for focus!
 ###
