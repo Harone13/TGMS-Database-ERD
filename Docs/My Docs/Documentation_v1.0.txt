@@ -1,0 +1,116 @@
+📘 TGMS – Minimal Documentation (v1.0) [For The DB schema]
+1. Overview
+TGMS (Task & Goals Management System) is designed to manage tasks, goals, and productivity using the Pomodoro technique.
+Core features in the first release:
+- Task tracking with estimates and completion counts
+- Sessions (planned work blocks)
+- Allocation of tasks to sessions
+- Focus periods (~20–25 min units)
+- Pomodoro events (execution logs)
+- Repeat rules for recurring tasks
+
+2. Database Schema
+Tasks
+- Purpose: Represents a work item or goal.
+- Columns:
+- Id (INT, PK, Identity)
+- Title (NVARCHAR(200), required)
+- Description (NVARCHAR(MAX))
+- Type (INT, enum)
+- State (INT, enum)
+- EstimatedPomodoros (INT, default 0)
+- CompletedPomodoros (INT, default 0)
+- CreatedAt (DATETIME, default GETDATE)
+- DueDate (DATETIME, optional)
+- LastGeneratedDate (DATETIME, optional)
+- RepeatRuleId (FK → RepeatRules.Id, optional)
+
+Sessions
+- Purpose: Planned or actual work blocks (e.g., “Morning Work Session”).
+- Columns:
+- Id (INT, PK, Identity)
+- Title (NVARCHAR(200))
+- CreatedAt (DATETIME, default GETDATE)
+- PlannedStart / PlannedEnd (DATETIME)
+- State (INT, enum)
+- PlannedPomodoroCount (INT, default 0)
+- ActualPomodoroCount (INT, default 0)
+
+SessionTasks
+- Purpose: Allocates tasks to sessions with planned effort.
+- Columns:
+- Id (INT, PK, Identity)
+- SessionId (FK → Sessions.Id, CASCADE)
+- TaskId (FK → Tasks.Id, NO ACTION)
+- AllocatedPomodoros (INT, default 0)
+- AllocatedMinutes (INT, default 0)
+- Note (NVARCHAR(MAX))
+
+FocusPeriods
+- Purpose: Atomic Pomodoro units (~20–25 minutes).
+- Columns:
+- Id (INT, PK, Identity)
+- SessionId (FK → Sessions.Id, CASCADE)
+- PeriodIndex (INT, sequence within session)
+- Type (INT, enum: focus, break, etc.)
+- PlannedDurationMinutes (INT)
+- StartTime / EndTime (DATETIME)
+- State (INT, enum)
+- Constraints:
+- EndTime > StartTime (check)
+
+PomodoroEvents
+- Purpose: Execution logs of actual focus work.
+- Columns:
+- Id (INT, PK, Identity)
+- TaskId (FK → Tasks.Id)
+- SessionId (FK → Sessions.Id)
+- FocusPeriodId (FK → FocusPeriods.Id)
+- StartTime / EndTime (DATETIME)
+- MinutesSpent (INT)
+- State (INT, enum)
+- Constraints:
+- EndTime > StartTime (check)
+
+RepeatRules
+- Purpose: Defines recurrence patterns for tasks.
+- Columns:
+- Id (INT, PK, Identity)
+- RuleType (INT, enum: None, Daily, Weekly, Monthly)
+- Interval (INT, default 1)
+- AnchorDate (DATETIME, optional)
+- EndDate (DATETIME, optional)
+- CreatedAt (DATETIME, default GETDATE)
+
+WeeklyRepeatRuleDays
+- Purpose: Specifies days of week for weekly rules.
+- Columns:
+- Id (INT, PK, Identity)
+- RepeatRuleId (FK → RepeatRules.Id, CASCADE)
+- DayOfWeek (INT, 0=Sunday … 6=Saturday)
+- Constraints:
+- Unique (RepeatRuleId, DayOfWeek)
+- DayOfWeek BETWEEN 0 AND 6
+
+3. Relationships
+- Tasks → RepeatRules (optional, one-to-one)
+- RepeatRules → WeeklyRepeatRuleDays (one-to-many)
+- Sessions → SessionTasks (one-to-many)
+- Sessions → FocusPeriods (one-to-many)
+- FocusPeriods → PomodoroEvents (one-to-many)
+- Tasks → PomodoroEvents (optional, one-to-many)
+
+4. Usage Notes
+- Sessions vs. Events: Sessions are planned containers; Events are actual execution logs. Both are needed for planned vs. actual reporting.
+- FocusPeriods: Allow multiple tasks per session and capture interruptions.
+- RepeatRules: Enable automatic generation of recurring tasks.
+- Indexes: Added on FKs and key query columns (DueDate, StartTime) for performance.
+
+5. Future Extensions
+- Add Users table (multi-user support).
+- Add Goals table (link tasks to higher-level goals).
+- Add Analytics views (weekly summaries, completion rates).
+- Consider archiving strategy for >2 years of data.
+
+👉 This doc is minimal but covers purpose, columns, constraints, and relationships. It’s perfect for you later, for teammates... to understand the schema context.
+
